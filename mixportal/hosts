@@ -1,0 +1,8 @@
+[portal]
+192.168.35.113
+
+
+
+[portal:vars]
+ansible_ssh_user=ubuntu
+ansible_ssh_port=22

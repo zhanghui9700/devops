@@ -1,0 +1,150 @@
+---
+- hosts: portal
+
+  vars:
+    http_port: 80
+    domain: example.com
+
+  tasks: 
+    ### system prepare
+    - name: cat /etc/lsb-release
+      shell: /bin/cat /etc/lsb-release
+      register: release
+
+    - debug: var=release.stdout_lines   
+
+    - name: change sources.list to aliyun
+      copy:
+        src: ./files/sources.list
+        dest: /etc/apt/sources.list
+
+    - name: cat sources.list
+      shell: /bin/cat /etc/apt/sources.list
+      register: respository
+
+    - debug: var=respository.stdout_lines   
+
+    - name: apt-get update
+      apt: update_cache=yes
+
+    - name: apt-get upgrade
+      apt: upgrade=full
+
+    - name: groupadd mixportal
+      group: name=mixportal state=present
+
+    - name: useradd mixportal
+      user: name=mixportal group=mixportal state=present home=/opt/mixportal
+
+    ### apt-get install packages
+    - name: apt-get install apache2
+      apt: pkg=apache2 state=installed
+  
+    - name: apt-get install mysql-server
+      apt: pkg=mysql-server state=installed
+
+    - name: start mysql-server
+      sudo: yes
+      service: name=mysql state=started enabled=true
+
+    - name: apt-get install mysql-client
+      apt: pkg=mysql-client state=installed
+
+    - name: apt-get install python-dev
+      apt: pkg=python-dev state=installed
+
+    - name: apt-get install libffi-dev
+      apt: pkg=libffi-dev state=installed
+
+    - name: apt-get install libssl-dev
+      apt: pkg=libssl-dev state=installed
+
+    - name: apt-get install libmysqlclient-dev
+      apt: pkg=libmysqlclient-dev state=installed
+
+    - name: apt-get install libapache2-mod-wsgi
+      apt: pkg=libapache2-mod-wsgi state=installed
+
+    - name: apt-get install libldap2-dev
+      apt: pkg=libldap2-dev state=installed
+
+    - name: apt-get install libsasl2-dev
+      apt: pkg=libsasl2-dev state=installed 
+      
+    - name: apt-get install python-pip
+      apt: pkg=python-pip state=installed
+
+    - name: make sure ~/.pip/ dir exist
+      file: path=/root/.pip/ state=directory
+
+    - name: /root/.pip/pip.conf
+      copy:
+        src: ./files/pip.conf
+        dest: /root/.pip/pip.conf
+
+    - name: pip install virtualenv
+      pip: name=virtualenv state=present
+
+    - name: pip install MySQL-python
+      pip: name=MySQL-python state=present
+
+    - name: create mysql database mixportal
+      mysql_db: name=mixportal state=present encoding=utf8
+
+    ### mysql prepare
+    - name: create mysql user mixportal
+      mysql_user: name=mixportal state=present password=password priv='mixportal.*:ALL,GRANT' host=localhost
+
+    ### deploy portal 
+    - name: make sure portal dir exist
+      file: path=/opt/mixportal/www/ state=directory
+
+    - name: make sure portal log dir exist
+      file: path=/opt/mixportal/logs/ state=directory
+
+    - name: get portal tar package
+      get_url: url=http://192.168.220.189/mixportal.tar.gz dest=/opt/mixportal/mixportal.tar.gz
+  
+    - name: unarchive portal tar
+      unarchive:
+        src: /opt/mixportal/mixportal.tar.gz
+        dest: /opt/mixportal/www/
+        copy: no
+
+    - name: pip install requirements 
+      pip: requirements=/opt/mixportal/www/requirements.txt virtualenv=/opt/mixportal/www/.venv
+
+    - name: copy local_settings.py
+      copy:
+        src: ./files/local_settings.py
+        dest: /opt/mixportal/www/dashboard/dashboard/local/
+
+    - name: python manage.py migrate
+      command: ../.venv/bin/python manage.py migrate
+      args:
+        chdir: /opt/mixportal/www/dashboard
+    
+    - name: python manage.py collectstatic
+      command: ../.venv/bin/python manage.py collectstatic --noinput
+      args:
+        chdir: /opt/mixportal/www/dashboard
+
+
+    - name: mixportal apache2 configuration
+      copy:
+        src: ./files/mixportal.conf
+        dest: /etc/apache2/sites-available/
+
+    - name: a2ensite mixportal
+      command: a2ensite mixportal
+
+    - name: chown to mixportal
+      file: path=/opt/mixportal state=directory owner=mixportal group=mixportal recurse=yes
+      
+    - name: start apache2
+      sudo: yes
+      service: name=apache2 state=restarted enabled=true
+
+  handlers:
+    - name: restart apache2
+      service: name=apache2 state=restarted
