@@ -1,0 +1,25 @@
+<VirtualHost *:{{web.port}}>
+    ServerAdmin {{web.admin}}
+    {% if web.server_name is defined %}
+    ServerName {{web.server_name}}
+    ServerAlias {{web.server_name}}
+    {% endif %}
+
+    ErrorLog ${APACHE_LOG_DIR}/{{web.a2ensite}}-error.log
+    CustomLog ${APACHE_LOG_DIR}/{{web.a2ensite}}-access.log common
+
+    Alias /static  {{user.home}}/www/dashboard/static
+    <Directory  {{user.home}}/www/dashboard/static>
+        Require all granted
+    </Directory>
+
+    <Directory  {{user.home}}/www/dashboard/dashboard>
+        <Files wsgi.py>
+            Require all granted
+        </Files>
+    </Directory>
+
+    WSGIScriptAlias / {{user.home}}/www/dashboard/dashboard/wsgi.py
+    WSGIDaemonProcess {{user.name}} user={{user.name}} group={{user.group}} processes=4 threads=10 python-path= {{user.home}}/www/dashboard:{{user.home}}/www/.venv/lib/python2.7/site-packages
+    WSGIProcessGroup {{user.group}}
+</VirtualHost>

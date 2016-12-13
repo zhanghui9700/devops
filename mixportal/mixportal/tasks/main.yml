@@ -1,0 +1,108 @@
+### system prepare
+- name: cat /etc/lsb-release
+  shell: /bin/cat /etc/lsb-release
+  register: lsb-release
+
+#- debug: var=lbs-release.stdout_lines   
+
+- name: change sources.list to aliyun
+  sudo: yes
+  copy:
+    src: sources.list
+    dest: /etc/apt/sources.list
+
+- name: cat sources.list
+  shell: /bin/cat /etc/apt/sources.list
+  register: respository
+
+#- debug: var=respository.stdout_lines   
+
+- name: apt-get update&upgrade
+  sudo: yes
+  apt: update_cache=yes upgrade=yes
+
+### install dependency packages
+- name: apt-get install dependency
+  sudo: yes
+  apt: pkg={{ item }} state=installed
+  with_items: 
+    - "{{ package.dependences }}"
+
+### user&group
+- name: groupadd {{ user.group }}
+  sudo: yes
+  group: name={{ user.group }} state=present
+
+- name: useradd {{ user.name }}
+  sudo: yes
+  user: name={{ user.name }} group={{ user.group }} state=present home={{ user.home }}
+
+### pip install dependency
+- name: make sure {{ item }} dir exist
+  sudo: yes
+  file: path="{{ item }}" state=directory
+  with_items:
+    - "{{user.home}}/www"
+    - "{{user.home}}/logs"
+    - "{{user.home}}/.pip"
+    - "/root/.pip"
+
+- name: /root/.pip/pip.conf
+  sudo: yes
+  copy: src=pip.conf dest=/root/.pip/pip.conf
+
+- name: pip install virtualenv
+  sudo: yes
+  pip: name=virtualenv state=present
+
+- name: pip install MySQL-python
+  sudo: yes
+  pip: name=MySQL-python state=present
+
+- name: start mysql-server
+  sudo: yes
+  service: name=mysql state=started enabled=true
+
+- name: create mysql database {{ db.name }}
+  mysql_db: name={{ db.name }} state=present encoding=utf8
+
+### mysql prepare
+- name: create mysql user {{ db.user }}
+  mysql_user: name={{ db.user }} state=present password={{db.password}} priv='{{db.name}}.*:ALL,GRANT' host={{db.host}}
+
+### deploy portal 
+- name: get portal tar package
+  get_url: url={{ release.download_url }} dest="{{user.home}}/mixportal_{{release.version}}.tar.gz" force=yes
+
+- name: unarchive portal tar
+  unarchive:
+    src: "{{user.home}}/mixportal_{{release.version}}.tar.gz"
+    dest: "{{user.home}}/www/"
+    copy: no
+
+- name: pip install requirements 
+  pip: requirements="{{user.home}}/www/requirements.txt" virtualenv="{{user.home}}/www/.venv"
+
+- name: make local_settings.py
+  template: src=local_settings.py.j2 dest="{{user.home}}/www/dashboard/dashboard/local/local_settings.py"
+
+- name: django_manage {{item}} 
+  django_manage:
+    command: "{{item}}"
+    app_path: "{{user.home}}/www/dashboard/"
+    virtualenv: "{{user.home}}/www/.venv"
+  with_items:
+    - "migrate"
+    - "collectstatic --noinput"
+    - "init_env"
+
+- name: mixportal apache2 configuration
+  template: src=apache.conf.j2 dest=/etc/apache2/sites-available/{{web.a2ensite}}.conf
+
+- name: chown to {{user.name}}
+  file: path={{user.home}} state=directory owner={{user.name}} group={{user.group}} recurse=yes
+  
+- name: a2ensite {{ web.a2ensite }}
+  command: a2ensite {{ web.a2ensite }}
+  notify:
+    - Restart Apache

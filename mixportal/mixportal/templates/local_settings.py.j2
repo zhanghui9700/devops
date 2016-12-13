@@ -1,0 +1,115 @@
+#-*- coding=utf-8 -*-
+
+from datetime import timedelta
+
+#### site config
+BRAND = u"OpenStack云管平台"
+EMAIL_SUBJECT_PREFIX = u"[%s]" % BRAND
+ICP_NUMBER = u"京-ICP Openstack"
+COPY_RIGHT = u"2015 © Openstack"
+DNS_NAMESERVERS = ["8.8.4.4", "114.114.114.114"]
+THEME_NAME = 'darkblue'
+EXTERNAL_URL = 'http://127.0.0.1:8000/'
+BATCH_INSTANCE = 10
+DEFAULT_BANDWIDTH = 5
+SEND_MAIL_WHEN_BACKEND_ERROR = False
+
+OPENSTACK_SSL_NO_VERIFY = True
+# OPENSTACK_SSL_CACERT = '/path/to/cacert.pem'
+
+#### function enable/disable
+
+QUOTA_CHECK = True
+MULTI_ROUTER_ENABLED = False
+WORKFLOW_ENABLED = False
+CAPTCHA_ENABLED = False
+REGISTER_ENABLED = False
+BATCH_DELETE_ENABLED = True
+REGISTER_ACTIVATE_EMAIL_ENABLED = False
+DEFAULT_ROUTER_AUTO_SET_GATEWAY = True
+ACTIVATE_EMAIL_EXPIRE_DAYS = timedelta(30)
+PASSWORD_RESET_TIMEOUT_DAYS = 1
+
+#### mail
+ADMINS = (("{{web.admin}}"), )
+EMAIL_HOST = "{{mail.host}}"
+EMAIL_PORT = "{{mail.port}}"
+EMAIL_HOST_USER = "{{mail.user}}"
+EMAIL_HOST_PASSWORD = "{{mail.password}}"
+DEFAULT_FROM_EMAIL = "{{mail.from}}"
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+####
+OS_NAME_PREFIX = u"{{ web.openstack_prefix }}"
+
+#### db
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': "{{ db.name }}",
+        'USER': "{{ db.user }}",
+        'PASSWORD': "{{ db.password }}",
+        'HOST': "{{ db.host }}",
+        'PORT': "{{ db.port }}",
+        'TEST_CHARSET': 'utf8',
+        'OPTIONS': {
+            'init_command': 'SET storage_engine=INNODB',
+        }
+    }
+}
+
+CELERYD_HIJACK_ROOT_LOGGER = False
+
+# LDAP
+LDAP_AUTH_ENABLED = False
+
+LOG_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        "verbose": {
+            'format': '%(asctime)s %(levelname)s [Line: %(lineno)s] -- %(message)s',
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        }
+    },
+    'handlers': {
+        'default': {
+            'level': 'DEBUG',
+            'filters': None,
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '{{user.home}}/logs/cloud.log',
+            'formatter': 'verbose'
+        },
+    },
+  
+    'loggers': {
+        'biz': {
+                'handlers': ['default'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+
+        'cloud': {
+                'handlers': ['default'],
+                'level': 'DEBUG',
+                'propagate': True,
+            }, 
+
+        'biz.monitor.utils': {
+                'handlers': [],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+
+        'biz.alarm.utils': {
+                'handlers': [],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+    }
+}
+
+
+SESSION_COOKIE_AGE = 30 * 60 * 360
+
+DEBUG = {{web.debug}}

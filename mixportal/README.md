@@ -1,3 +1,5 @@
-### RUN
+### how to run ansible mixportal role
 
-    ansible-playbook -i hosts -s deploy.yaml
+    edit vars/main.yml
+    
+    ANSIBLE_ROLES_PATH=`pwd` ansible-playbook -i hosts -s deploy.yml

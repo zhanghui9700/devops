@@ -1,0 +1,46 @@
+---
+release:
+  download_url: http://192.168.220.189/mixportal.tar.gz
+  version: 1.0.1 
+
+mail:
+  host: test.mail.com
+  port: 25
+  user: abc
+  password: abc
+  from: noreply@mail.com
+
+user:
+  name: mix
+  group: mix
+  home: /opt/mix
+
+db:
+  name: cloud_db
+  user: cloud
+  password: password
+  host: 127.0.0.1
+  port: 3306
+
+web:
+  debug: True
+  admin: zhangh@suninfo.com
+  a2ensite: mix
+  port: 80
+  openstack_prefix: cloud
+  server_name: www.mixportal.com
+
+package:
+  dependences:
+    - git
+    - apache2
+    - mysql-server
+    - mysql-client
+    - python-dev
+    - libffi-dev
+    - libssl-dev
+    - libmysqlclient-dev
+    - libapache2-mod-wsgi
+    - libldap2-dev
+    - libsasl2-dev
+    - python-pip
