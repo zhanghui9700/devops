@@ -72,7 +72,7 @@
 
 ### deploy portal 
 - name: get portal tar package
-  get_url: url={{ release.download_url }} dest="{{user.home}}/mixportal_{{release.version}}.tar.gz" force=yes
+  copy: src={{ release.scp_url }} dest="{{user.home}}/mixportal_{{release.version}}.tar.gz" force=yes
 
 - name: unarchive portal tar
   unarchive:
