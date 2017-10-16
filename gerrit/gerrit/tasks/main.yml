@@ -1,0 +1,93 @@
+### system prepare
+- name: cat /etc/lsb-release
+  shell: /bin/cat /etc/lsb-release
+  register: lsb-release
+
+#- debug: var=lbs-release.stdout_lines   
+
+- name: change sources.list to aliyun
+  sudo: yes
+  copy:
+    src: sources.list
+    dest: /etc/apt/sources.list
+
+- name: cat sources.list
+  shell: /bin/cat /etc/apt/sources.list
+  register: respository
+
+#- debug: var=respository.stdout_lines   
+
+- name: open-jdk-repo
+  sudo: yes
+  apt_repository: repo=ppa:webupd8team/java update_cache=no
+
+- name: apt-get update&upgrade
+  sudo: yes
+  apt: update_cache=yes upgrade=yes
+
+- name: set licence selected
+  shell: /bin/echo debconf shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+  sudo: yes
+
+- name: set licence seen
+  shell: /bin/echo debconf shared/accepted-oracle-license-v1-1 seen true | /usr/bin/debconf-set-selections
+  sudo: yes
+
+### install dependency packages
+- name: apt-get install dependency
+  sudo: yes
+  apt: pkg={{ item }} state=installed
+  with_items: 
+    - "{{ package.dependences }}"
+
+### user&group
+- name: groupadd {{ user.group }}
+  sudo: yes
+  group: name={{ user.group }} state=present
+
+- name: useradd {{ user.name }}
+  sudo: yes
+  user: name={{ user.name }} group={{ user.group }} state=present home={{ user.home }}
+
+- name: a2enmod proxy
+  command: a2enmod proxy
+
+- name: gerrit apache2 configuration
+  template: src=apache.conf.j2 dest=/etc/apache2/sites-available/{{web.a2ensite}}.conf
+
+- name: wget review.tar.gz
+  get_url: url={{release.review_url}} dest="{{user.home}}/review.tar.gz"
+
+- name: wget reviewdb.sql
+  get_url: url={{release.db_url}} dest="{{user.home}}/reviewdb.sql"
+
+- name: tar zxvf review.tar.gz
+  unarchive:
+    src: "{{user.home}}/review.tar.gz"
+    dest: "{{user.home}}"
+    copy: no 
+
+- name: chown to {{user.name}}
+  file: path={{user.home}} state=directory owner={{user.name}} group={{user.group}} recurse=yes
+
+- name: pip install MySQL-python
+  sudo: yes
+  pip: name=MySQL-python state=present
+
+- name: start mysql-server
+  sudo: yes
+  service: name=mysql state=started enabled=true
+
+- name: create mysql database {{ db.name }}
+  mysql_db: name={{ db.name }} state=present encoding=utf8
+
+- name: create mysql user {{ db.user }}
+  mysql_user: name={{ db.user }} state=present password={{db.password}} priv='{{db.name}}.*:ALL,GRANT' host={{db.host}}
+
+- name: restore review db
+  mysql_db: name={{db.name}} state=import target="{{user.home}}/reviewdb.sql"
+  
+- name: a2ensite {{ web.a2ensite }}
+  command: a2ensite {{ web.a2ensite }}
+  notify:
+    - Restart Apache

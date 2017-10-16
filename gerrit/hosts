@@ -1,0 +1,8 @@
+[gerrit]
+10.10.38.170
+
+
+
+[gerrit:vars]
+ansible_ssh_user=ubuntu
+ansible_ssh_port=22

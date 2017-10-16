@@ -1,0 +1,30 @@
+---
+release:
+  review_url: http://10.10.38.167:9900/review.tar.gz
+  db_url: http://10.10.38.167:9900/reviewdb.sql
+  #scp_url: /home/zhanghui/review/mixportal/releases/v1.0.1/mixportal.tar.gz
+  version: 1.0.1 
+
+user:
+  name: gerrit2
+  group: gerrit2
+  home: /home/gerrit2
+
+db:
+  name: reviewdb
+  user: gerrit2
+  password: password
+  host: 127.0.0.1
+  port: 3306
+
+web:
+  a2ensite: gerrit
+  server_name: review.fx-dev.com
+
+package:
+  dependences:
+    - git
+    - vim
+    - apache2
+    - mysql-server
+    - oracle-java8-installer

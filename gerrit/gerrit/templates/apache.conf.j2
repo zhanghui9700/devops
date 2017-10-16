@@ -1,0 +1,33 @@
+#LoadModule proxy_module modules/mod_proxy.so
+#LoadModule proxy_http_module modules/mod_proxy_http.so
+
+<VirtualHost *:80>
+
+        ServerName review.fx-dev.com
+        ServerAlias review.fx-dev.com
+        ErrorLog /var/log/apache2/gerrit_error.log
+        CustomLog /var/log/apache2/gerrit_access.log combined
+
+        ProxyRequests Off
+        ProxyVia Off
+        ProxyPreserveHost On
+
+        <Proxy *>
+            Order deny,allow
+            Allow from all
+        </Proxy>
+
+        <Location "/">
+            AuthType Basic
+            AuthName "Code Review"
+            AuthBasicProvider file
+            Require valid-user
+            AuthUserFile '/home/gerrit2/review/gerrit.htpasswd'
+        </Location>
+
+        AllowEncodedSlashes On
+        Redirect permanent / http://review.fx-dev.com/gerrit/
+        ProxyPass /gerrit/ http://127.0.0.1:8080/ nocanon
+
+</VirtualHost>
+
