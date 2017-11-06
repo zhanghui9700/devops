@@ -8,8 +8,12 @@
     ErrorLog ${APACHE_LOG_DIR}/{{web.a2ensite}}-error.log
     CustomLog ${APACHE_LOG_DIR}/{{web.a2ensite}}-access.log common
 
-    Alias /static  {{user.home}}/www/dashboard/static
-    <Directory  {{user.home}}/www/dashboard/static>
+    Alias /static  {{user.home}}/www/static
+    Alias /media  {{user.home}}/www/media
+    <Directory  {{user.home}}/www/static>
+        Require all granted
+    </Directory>
+    <Directory  {{user.home}}/www/media>
         Require all granted
     </Directory>
 
